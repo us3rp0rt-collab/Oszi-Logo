@@ -2,346 +2,339 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Oscilloscope IVANKA Sweep</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Oscilloscope IVANKA</title>
   <style>
-    :root{
-      --bg:#05080a;
-      --panel:#0a1114;
-      --trace:#7bffbf;
-      --trace-hot:#d9fff1;
-      --muted:#7fb39a;
-      --shadow:0 30px 90px rgba(0,0,0,.55);
-      --radius:28px;
-      --font: Inter, ui-sans-serif, system-ui, sans-serif;
+    :root {
+      --bg: #04080a;
+      --trace: #39ff9a;
+      --muted: #4a8c68;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', Inter, sans-serif;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:var(--font);
-      color:#d7fff0;
-      background:
-        radial-gradient(circle at 50% 15%, rgba(123,255,191,.10), transparent 24%),
-        linear-gradient(180deg, #041013 0%, #020607 100%);
-      overflow:hidden;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      font-family: var(--font);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
-    .shell{
-      min-height:100%;
-      display:grid;
-      place-items:center;
-      padding:18px;
+    body {
+      display: flex;
+      flex-direction: column;
+      padding:
+        env(safe-area-inset-top, 0px)
+        env(safe-area-inset-right, 0px)
+        env(safe-area-inset-bottom, 0px)
+        env(safe-area-inset-left, 0px);
     }
-    .scope{
-      width:min(1280px,100%);
-      aspect-ratio:16/9;
-      border-radius:36px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
-        linear-gradient(180deg, var(--panel), #081014 100%);
-      border:1px solid rgba(140,255,214,.12);
-      box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.04);
-      position:relative;
-      overflow:hidden;
+
+    /* ── Header ── */
+    .hdr {
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 14px 4px;
     }
-    .scope::before{
-      content:"";
-      position:absolute;inset:0;
-      background:
-        linear-gradient(to right, transparent 0 24px, rgba(255,255,255,.03) 24px 25px, transparent 25px calc(100% - 24px), rgba(255,255,255,.03) calc(100% - 24px) calc(100% - 23px), transparent calc(100% - 23px)),
-        linear-gradient(to bottom, transparent 0 24px, rgba(255,255,255,.03) 24px 25px, transparent 25px calc(100% - 24px), rgba(255,255,255,.03) calc(100% - 24px) calc(100% - 23px), transparent calc(100% - 23px));
-      pointer-events:none;
-      z-index:4;
+    .brand-name { font-size: 11px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: #fff; }
+    .brand-sub  { font-size: 9px; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+    .run-pill {
+      font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+      color: #020c09; background: var(--trace); padding: 3px 10px; border-radius: 4px;
     }
-    .scope::after{
-      content:"";
-      position:absolute;inset:-20%;
-      background:radial-gradient(circle at 50% 50%, transparent 48%, rgba(0,0,0,.24) 75%, rgba(0,0,0,.45) 100%);
-      pointer-events:none;
-      z-index:5;
+
+    /* ── Screen ── */
+    .screen-wrap {
+      flex: 1 1 0;
+      padding: 0 8px 4px;
+      display: flex;
+      min-height: 0;
     }
-    .screen{
-      position:absolute;
-      inset:18px;
-      border-radius:24px;
-      background:
-        radial-gradient(circle at 50% 50%, rgba(123,255,191,.06), transparent 32%),
-        linear-gradient(180deg, rgba(10,22,24,.95), rgba(6,12,14,.98));
-      overflow:hidden;
-      border:1px solid rgba(116,255,199,.10);
+    .screen {
+      flex: 1 1 0;
+      position: relative;
+      border-radius: 10px;
+      border: 1px solid rgba(57,255,154,.20);
+      background: #020c09;
+      overflow: hidden;
     }
-    canvas{display:block;width:100%;height:100%}
-    .hud{
-      position:absolute; inset:0;
-      pointer-events:none;
-      z-index:3;
+    canvas {
+      display: block;
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
     }
-    .topbar{
-      position:absolute;
-      left:24px; right:24px; top:18px;
-      display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
-      text-transform:uppercase; letter-spacing:.18em; font-size:.72rem;
-      color:var(--muted);
+
+    /* ── Footer ── */
+    .ftr {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      padding: 4px 8px 8px;
     }
-    .brand{display:flex; flex-direction:column; gap:6px}
-    .brand strong{color:#fff; font-size:.92rem; letter-spacing:.22em}
-    .pill{
-      padding:10px 14px;
-      border-radius:999px;
-      background:rgba(123,255,191,.08);
-      border:1px solid rgba(123,255,191,.14);
-      color:#fff;
-      backdrop-filter:blur(8px);
+    .card {
+      background: rgba(2,12,9,.85);
+      border: 1px solid rgba(57,255,154,.12);
+      border-radius: 7px;
+      padding: 5px 7px;
     }
-    .readouts{
-      position:absolute; left:24px; right:24px; bottom:18px;
-      display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:12px;
-      color:#fff; font-size:.9rem;
-    }
-    .card{
-      padding:12px 14px;
-      border-radius:16px;
-      background:rgba(10,18,20,.58);
-      border:1px solid rgba(123,255,191,.10);
-      backdrop-filter:blur(8px);
-    }
-    .label{display:block; color:var(--muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.16em; margin-bottom:6px}
-    .value{font-variant-numeric:tabular-nums; font-size:1.05rem; color:var(--trace-hot)}
-    .legend{
-      position:absolute;
-      right:24px;
-      top:78px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      align-items:flex-end;
-      color:var(--muted);
-      font-size:.8rem;
-      text-transform:uppercase;
-      letter-spacing:.14em;
-    }
-    .legend .line{display:flex; align-items:center; gap:8px}
-    .dot{width:10px;height:10px;border-radius:50%;background:var(--trace);box-shadow:0 0 12px rgba(123,255,191,.42)}
-    @media (max-width:760px){
-      .scope{aspect-ratio:4/3}
-      .readouts{grid-template-columns:1fr 1fr}
-      .topbar{left:18px;right:18px}
-      .legend{top:auto; bottom:112px}
-    }
-    @media (prefers-reduced-motion: reduce){
-      *{animation:none!important;transition:none!important}
+    .clabel { display: block; font-size: 8px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+    .cval   { font-size: 12px; font-weight: 600; color: var(--trace); font-variant-numeric: tabular-nums; }
+
+    /* ── Landscape: readouts rechts ── */
+    @media (orientation: landscape) {
+      .hdr   { padding: 5px 14px 2px; }
+      .screen-wrap { flex-direction: row; padding: 0 8px 4px; gap: 6px; }
+      .ftr {
+        flex: 0 0 68px;
+        grid-template-columns: 1fr;
+        grid-template-rows: repeat(4, 1fr);
+        padding: 0 8px 4px 0;
+        align-self: stretch;
+      }
+      .screen { flex: 1 1 0; }
     }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <section class="scope" aria-label="Oszilloskop-Bildschirm mit scrollender IVANKA-Spur">
-      <div class="screen">
-        <canvas id="scope"></canvas>
-        <div class="hud">
-          <div class="topbar">
-            <div class="brand">
-              <strong>OSCILLOSCOPE</strong>
-              <span>Scroll sweep display</span>
-            </div>
-            <div class="pill" id="timebase">Live sweep</div>
-          </div>
-          <div class="legend">
-            <div class="line"><span class="dot"></span>Trace A</div>
-            <div class="line">Trigger: Auto</div>
-          </div>
-          <div class="readouts">
-            <div class="card"><span class="label">Amplitude</span><span class="value" id="amp">TRACE</span></div>
-            <div class="card"><span class="label">Frequency</span><span class="value" id="freq">IVANKA</span></div>
-            <div class="card"><span class="label">Phase</span><span class="value" id="phase">--</span></div>
-            <div class="card"><span class="label">Signal</span><span class="value" id="signal">RUN</span></div>
-          </div>
-        </div>
-      </div>
-    </section>
+
+<div class="hdr">
+  <div>
+    <div class="brand-name">Oscilloscope</div>
+    <div class="brand-sub">CH1 · DC · Sweep</div>
   </div>
+  <span class="run-pill">RUN</span>
+</div>
 
-  <script>
-    const canvas = document.getElementById('scope');
-    const ctx = canvas.getContext('2d');
-    const ampEl = document.getElementById('amp');
-    const freqEl = document.getElementById('freq');
-    const phaseEl = document.getElementById('phase');
-    const timebaseEl = document.getElementById('timebase');
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
+<div class="screen-wrap">
+  <div class="screen">
+    <canvas id="c"></canvas>
+  </div>
+</div>
 
-    let W = 0, H = 0, t = 0;
-    let pts = [];
-    let fitW = 1;
-    let drawStart = 0;
+<div class="ftr">
+  <div class="card"><span class="clabel">Mode</span><span class="cval" id="v0">DRAW</span></div>
+  <div class="card"><span class="clabel">Signal</span><span class="cval">IVANKA</span></div>
+  <div class="card"><span class="clabel">Phase</span><span class="cval" id="v2">0°</span></div>
+  <div class="card"><span class="clabel">Trigger</span><span class="cval">AUTO</span></div>
+</div>
 
-    const word = 'IVANKA';
-    const holdTime = 3.8;
-    const drawTime = 3.2;
-    const slideTime = 4.2;
-    const cycle = holdTime + drawTime + slideTime;
-    const startX = 0.12;
-    const endX = -1.05;
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const dpr    = Math.min(window.devicePixelRatio || 1, 3);
 
-    function resize() {
-      const r = canvas.getBoundingClientRect();
-      W = r.width;
-      H = r.height;
-      canvas.width = Math.round(W * dpr);
-      canvas.height = Math.round(H * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      buildPoints();
+let W = 0, H = 0;
+
+function resize() {
+  const r = canvas.getBoundingClientRect();
+  W = r.width; H = r.height;
+  canvas.width  = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  buildPts();
+}
+
+/* ══════════════════════════════════════════════════
+   Buchstaben-Koordinaten aus Original übernommen.
+   Skaliert auf aktuelle Canvas-Größe, zentriert.
+   ══════════════════════════════════════════════════ */
+let pts = [];
+
+function buildPts() {
+  const baseY = H * 0.5;
+  /* Skalierung so, dass Schrift gut in den Bildschirm passt */
+  const s  = Math.min(W / 1080, H / 280) * 0.88;
+  /* Rohbreite des Schriftzugs im Original-Koordinatensystem */
+  const rawW = 572 * s;
+  /* Horizontal zentrieren */
+  const ox = (W - rawW) * 0.5;
+
+  const raw = [];
+  const push = (x, y) => raw.push({ x: ox + x * s, y: baseY + y * s });
+
+  /* I */
+  push(0,  -78); push(0,   78);
+  /* V */
+  push(40, -78); push(85,  78); push(130,-78);
+  /* A */
+  push(170, 78); push(206,-78); push(242, 78);
+  push(192,  4); push(220,  4);
+  /* N */
+  push(286, 78); push(286,-78); push(350,-78); push(350, 78);
+  /* K */
+  push(394,-78); push(394, 78); push(394,  6);
+  push(456,-78); push(394,  6); push(462, 78);
+  /* A (2) */
+  push(500, 78); push(536,-78); push(572, 78);
+  push(522,  4); push(550,  4);
+
+  pts = [];
+  for (let i = 0; i < raw.length - 1; i++) {
+    const a = raw[i], b = raw[i + 1];
+    const steps = i === 0 ? 120 : 160;
+    for (let j = 0; j < steps; j++) {
+      const u = j / steps;
+      pts.push({ x: a.x + (b.x - a.x) * u, y: a.y + (b.y - a.y) * u });
     }
+  }
+  pts.push(raw[raw.length - 1]);
+}
 
-    function buildPoints() {
-      const baseY = H * 0.5;
-      const s = Math.min(W / 1100, H / 310);
-      const ox = W * 0.16;
-      const raw = [];
-      const push = (x, y) => raw.push({ x: ox + x * s, y: baseY + y * s });
-      push(0, -78); push(0, 78);
-      push(40, -78); push(85, 78); push(130, -78);
-      push(170, 78); push(206, -78); push(242, 78);
-      push(192, 4); push(220, 4);
-      push(286, 78); push(286, -78); push(350, 78); push(350, -78);
-      push(394, -78); push(394, 78); push(394, 6); push(456, -78); push(394, 6); push(462, 78);
-      push(500, 78); push(536, -78); push(572, 78);
-      push(522, 4); push(550, 4);
-      pts = [];
-      for (let i = 0; i < raw.length - 1; i++) {
-        const a = raw[i], b = raw[i + 1];
-        const steps = i === 0 ? 120 : 160;
-        for (let j = 0; j < steps; j++) {
-          const u = j / steps;
-          pts.push({
-            x: a.x + (b.x - a.x) * u,
-            y: a.y + (b.y - a.y) * u
-          });
-        }
-      }
-      pts.push(raw[raw.length - 1]);
-      fitW = pts[pts.length - 1].x - pts[0].x;
-      if (fitW < 1) fitW = 1;
-      drawStart = W * startX;
-    }
+/* ── Gitter ── */
+function drawGrid() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#020c09';
+  ctx.fillRect(0, 0, W, H);
+  const cols = 10, rows = 8;
+  for (let i = 0; i <= cols; i++) {
+    const x = (i / cols) * W;
+    ctx.strokeStyle = (i === 5) ? 'rgba(57,255,154,.20)' : 'rgba(57,255,154,.08)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let i = 0; i <= rows; i++) {
+    const y = (i / rows) * H;
+    ctx.strokeStyle = (i === 4) ? 'rgba(57,255,154,.20)' : 'rgba(57,255,154,.08)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+}
 
-    function drawGrid() {
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = '#071114';
-      ctx.fillRect(0, 0, W, H);
-      const mx = W / 10, my = H / 8;
-      for (let i = 0; i <= 10; i++) {
-        const x = i * mx;
-        ctx.strokeStyle = i === 5 ? 'rgba(123,255,191,.18)' : 'rgba(123,255,191,.08)';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
-      }
-      for (let i = 0; i <= 8; i++) {
-        const y = i * my;
-        ctx.strokeStyle = i === 4 ? 'rgba(123,255,191,.18)' : 'rgba(123,255,191,.08)';
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-      }
-      ctx.save();
-      ctx.globalAlpha = 0.12;
-      ctx.strokeStyle = 'rgba(123,255,191,.22)';
-      for (let i = 0; i < 28; i++) {
-        const y = H * 0.5 + Math.sin(i * 0.35 + t * 0.02) * 3;
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-      }
-      ctx.restore();
-    }
+/* ── Vollständige Schrift (Ghost) ── */
+function drawGhost(xshift) {
+  if (!pts.length) return;
+  ctx.save();
+  ctx.translate(xshift, 0);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
-    function drawWholeShape(xshift, colorA = 0.32, blur = 12, width = 6) {
-      if (!pts.length) return;
-      ctx.save();
-      ctx.translate(xshift, 0);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.shadowColor = 'rgba(123,255,191,.65)';
-      ctx.shadowBlur = blur;
-      ctx.strokeStyle = `rgba(123,255,191,${colorA})`;
-      ctx.lineWidth = width;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-      ctx.restore();
-    }
+  ctx.shadowColor = 'rgba(57,255,154,.55)';
+  ctx.shadowBlur  = 22;
+  ctx.strokeStyle = 'rgba(57,255,154,.10)';
+  ctx.lineWidth   = 14;
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
 
-    function drawProgressShape(xshift, progress) {
-      if (!pts.length) return;
-      const n = pts.length;
-      const head = Math.max(1, Math.min(n - 1, Math.floor(progress * (n - 1))));
-      ctx.save();
-      ctx.translate(xshift, 0);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.shadowColor = 'rgba(123,255,191,.65)';
-      ctx.shadowBlur = 24;
-      ctx.strokeStyle = 'rgba(123,255,191,.10)';
-      ctx.lineWidth = 14;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i <= head; i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-      ctx.shadowBlur = 12;
-      ctx.strokeStyle = 'rgba(123,255,191,.32)';
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i <= head; i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      const g = ctx.createLinearGradient(0, 0, W, 0);
-      g.addColorStop(0, 'rgba(196,255,225,.25)');
-      g.addColorStop(0.5, '#7bffbf');
-      g.addColorStop(1, 'rgba(196,255,225,.25)');
-      ctx.strokeStyle = g;
-      ctx.lineWidth = 2.8;
-      ctx.beginPath();
-      ctx.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i <= head; i++) ctx.lineTo(pts[i].x, pts[i].y);
-      ctx.stroke();
-      ctx.restore();
-    }
+  ctx.shadowBlur  = 10;
+  ctx.strokeStyle = 'rgba(57,255,154,.30)';
+  ctx.lineWidth   = 5;
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
 
-    function hud(mode) {
-      ampEl.textContent = 'TRACE';
-      freqEl.textContent = word;
-      phaseEl.textContent = mode;
-      timebaseEl.textContent = mode === 'slide' ? 'Smooth push left' : 'Fully visible hold';
-    }
+  ctx.shadowBlur  = 0;
+  ctx.strokeStyle = 'rgba(57,255,154,.88)';
+  ctx.lineWidth   = 2.0;
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
 
-    function loop() {
-      t += 1;
-      drawGrid();
-      const sec = performance.now() / 1000;
-      const phase = sec % cycle;
-      if (phase < holdTime) {
-        drawWholeShape(drawStart, 0.10, 26, 14);
-        drawWholeShape(drawStart, 0.32, 12, 6);
-        drawWholeShape(drawStart, 0.95, 0, 2.6);
-        hud('hold');
-      } else if (phase < holdTime + drawTime) {
-        const p = (phase - holdTime) / drawTime;
-        const ease = p * p * (3 - 2 * p);
-        drawProgressShape(drawStart, ease);
-        hud('writing');
-      } else {
-        const p = (phase - holdTime - drawTime) / slideTime;
-        const ease = p * p * (3 - 2 * p);
-        const x = W * (startX + (endX - startX) * ease);
-        drawWholeShape(x, 0.10, 26, 14);
-        drawWholeShape(x, 0.32, 12, 6);
-        drawWholeShape(x, 0.95, 0, 2.6);
-        hud('slide');
-      }
-      requestAnimationFrame(loop);
-    }
+  ctx.restore();
+}
 
-    window.addEventListener('resize', resize, { passive: true });
-    resize();
-    loop();
-  </script>
+/* ── Schrift wird gezeichnet (Fortschritt 0..1) ── */
+function drawProgress(xshift, progress) {
+  if (!pts.length) return;
+  const n    = pts.length;
+  const head = Math.max(1, Math.min(n - 1, Math.floor(progress * (n - 1))));
+
+  ctx.save();
+  ctx.translate(xshift, 0);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  /* Glow */
+  ctx.shadowColor = 'rgba(57,255,154,.65)';
+  ctx.shadowBlur  = 24;
+  ctx.strokeStyle = 'rgba(57,255,154,.10)';
+  ctx.lineWidth   = 14;
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i <= head; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+
+  ctx.shadowBlur  = 12;
+  ctx.strokeStyle = 'rgba(57,255,154,.32)';
+  ctx.lineWidth   = 5;
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i <= head; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+
+  /* Kern */
+  ctx.shadowBlur = 0;
+  const g = ctx.createLinearGradient(pts[0].x, 0, pts[head].x, 0);
+  g.addColorStop(0,   'rgba(180,255,220,.28)');
+  g.addColorStop(0.8, 'rgba(57,255,154,.85)');
+  g.addColorStop(1,   '#d9fff1');
+  ctx.strokeStyle = g;
+  ctx.lineWidth   = 2.2;
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i <= head; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.stroke();
+
+  /* Spot */
+  ctx.shadowColor = '#39ff9a';
+  ctx.shadowBlur  = 18;
+  ctx.fillStyle   = '#e8fff5';
+  ctx.beginPath();
+  ctx.arc(pts[head].x, pts[head].y, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ══════════════════════════════════════════════════
+   Timing
+   ══════════════════════════════════════════════════ */
+const T_HOLD  = 3.5;
+const T_DRAW  = 3.2;
+const T_SLIDE = 4.0;
+const T_CYCLE = T_HOLD + T_DRAW + T_SLIDE;
+
+function ease(t) { return t * t * (3 - 2 * t); }
+
+const v0El = document.getElementById('v0');
+const v2El = document.getElementById('v2');
+let t0 = null;
+
+function frame(ts) {
+  if (!t0) t0 = ts;
+  const sec   = (ts - t0) / 1000;
+  const phase = sec % T_CYCLE;
+
+  drawGrid();
+
+  if (phase < T_HOLD) {
+    const p = phase / T_HOLD;
+    drawGhost(0);
+    v0El.textContent = 'HOLD';
+    v2El.textContent = Math.round(p * 360) + '°';
+
+  } else if (phase < T_HOLD + T_DRAW) {
+    const p = ease((phase - T_HOLD) / T_DRAW);
+    drawProgress(0, p);
+    v0El.textContent = 'DRAW';
+    v2El.textContent = Math.round(p * 360) + '°';
+
+  } else {
+    const p = ease((phase - T_HOLD - T_DRAW) / T_SLIDE);
+    /* Schrift gleitet nach links aus dem Bild */
+    const xshift = -W * 1.18 * p;
+    drawGhost(xshift);
+    v0El.textContent = 'SWEEP';
+    v2El.textContent = Math.round(p * 360) + '°';
+  }
+
+  requestAnimationFrame(frame);
+}
+
+window.addEventListener('resize', () => { resize(); }, { passive: true });
+window.addEventListener('orientationchange', () => { setTimeout(resize, 150); }, { passive: true });
+
+resize();
+requestAnimationFrame(frame);
+</script>
 </body>
 </html>
